@@ -1,0 +1,161 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-FileCopyrightText: 2025 Hyperpolymath <hyperpolymath@proton.me>
+= twingate-helm-deploy
+:icons: font
+:toc: left
+:toclevels: 3
+
+== Purpose
+
+Deploy the Twingate Connector into Kubernetes using Helm charts and declarative values.
+
+Part of the link:https://github.com/hyperpolymath/flatracoon-netstack[FlatRacoon Network Stack].
+
+== Architecture
+
+[source]
+----
+                    ┌─────────────────────┐
+                    │   Twingate Cloud    │
+                    └──────────┬──────────┘
+                               │
+                    ┌──────────▼──────────┐
+                    │  Twingate Connector │
+                    │    (This Module)    │
+                    └──────────┬──────────┘
+                               │
+              ┌────────────────┼────────────────┐
+              │                │                │
+     ┌────────▼────────┐ ┌─────▼─────┐ ┌───────▼───────┐
+     │   ZeroTier      │ │   IPFS    │ │   Services    │
+     │   Overlay       │ │   Nodes   │ │   (K8s)       │
+     └─────────────────┘ └───────────┘ └───────────────┘
+----
+
+== Components
+
+* **Helm chart configuration** - Declarative Twingate Connector deployment
+* **Values templates** - Environment-specific configurations
+* **Deployment scripts** - Automated rollout via Just/mustfile
+* **RBAC manifests** - Kubernetes role bindings
+* **Network policies** - Ingress/egress rules
+
+== Directory Structure
+
+[source]
+----
+twingate-helm-deploy/
+├── charts/
+│   └── twingate-connector/
+│       ├── Chart.yaml
+│       ├── values.yaml
+│       ├── templates/
+│       │   ├── deployment.yaml
+│       │   ├── service.yaml
+│       │   ├── serviceaccount.yaml
+│       │   ├── rbac.yaml
+│       │   └── networkpolicy.yaml
+│       └── README.md
+├── configs/
+│   ├── base.ncl           # Nickel base configuration
+│   ├── production.ncl
+│   └── staging.ncl
+├── Justfile
+├── README.adoc
+├── STATE.scm
+├── META.scm
+└── ECOSYSTEM.scm
+----
+
+== Inputs
+
+[cols="1,2,1"]
+|===
+| Input | Description | Source
+
+| `TWINGATE_ACCESS_TOKEN`
+| Connector authentication token
+| poly-secret-mcp / Vault
+
+| `TWINGATE_REFRESH_TOKEN`
+| Token refresh credential
+| poly-secret-mcp / Vault
+
+| `KUBERNETES_CONTEXT`
+| Target cluster context
+| kubeconfig
+
+| Helm values
+| Configuration overrides
+| configs/*.ncl
+|===
+
+== Outputs
+
+[cols="1,2"]
+|===
+| Output | Description
+
+| Running Twingate Connector pod
+| Establishes secure tunnel to Twingate network
+
+| Secure access layer
+| Enables zero-trust access to cluster resources
+
+| Health metrics
+| Prometheus-compatible metrics endpoint
+
+| Audit logs
+| Access logs for compliance
+|===
+
+== Integration Points
+
+=== With FlatRacoon Stack
+
+* **zerotier-k8s-link** - Connector routes traffic to ZeroTier overlay
+* **ipfs-overlay** - IPFS nodes accessible via Twingate
+* **poly-secret-mcp** - Credentials retrieved from Vault
+* **poly-k8s-mcp** - Deployment orchestrated via MCP
+
+=== Machine-Readable Manifest
+
+[source,json]
+----
+{
+  "module": "twingate-helm-deploy",
+  "version": "0.1.0",
+  "layer": "access",
+  "requires": ["kubernetes", "helm"],
+  "provides": ["secure-access", "zero-trust-ingress"],
+  "config_schema": "configs/schema.ncl",
+  "health_endpoint": "/health",
+  "metrics_endpoint": "/metrics"
+}
+----
+
+== Quick Start
+
+[source,bash]
+----
+# 1. Set credentials (via poly-secret-mcp or directly)
+export TWINGATE_ACCESS_TOKEN="..."
+export TWINGATE_REFRESH_TOKEN="..."
+
+# 2. Deploy with Just
+just deploy production
+
+# 3. Verify
+just health-check
+----
+
+== Status
+
+[horizontal]
+Phase:: Scaffolding
+Completion:: 15%
+Next:: Chart population and secrets integration
+
+== License
+
+AGPL-3.0-or-later
