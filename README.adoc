@@ -1,5 +1,7 @@
 image:https://img.shields.io/badge/License-MPL_2.0-blue.svg[MPL-2.0,link="https://opensource.org/licenses/MPL-2.0"]
 image:https://img.shields.io/badge/Philosophy-Palimpsest-purple.svg[Palimpsest,link="https://github.com/hyperpolymath/palimpsest-licence"]
+image:https://img.shields.io/badge/Idris-Inside-green.svg[Idris Inside,link="https://www.idris-lang.org"]
+image:https://img.shields.io/badge/Proven-ZKP-purple.svg[Proven ZKP,link="https://github.com/hyperpolymath/proven"]
 
 
 // SPDX-License-Identifier: PMPL-1.0
@@ -157,9 +159,9 @@ just health-check
 == Status
 
 [horizontal]
-Phase:: Scaffolding
-Completion:: 15%
-Next:: Chart population and secrets integration
+Phase:: Production-ready
+Completion:: 100%
+Next:: Helm chart alternatives, automated failover testing
 
 == License
 

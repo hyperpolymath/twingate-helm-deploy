@@ -1,0 +1,114 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
+# Default values for twingate-connector
+
+# Twingate connector configuration
+twingate:
+  # Network name (required)
+  network: "your-network"
+  
+  # Credentials (via secret)
+  credentials:
+    # Name of secret containing access/refresh tokens
+    secretName: "twingate-credentials"
+    accessTokenKey: "access-token"
+    refreshTokenKey: "refresh-token"
+  
+  # Connector configuration
+  connector:
+    # Log level: info, debug, warn, error
+    logLevel: "info"
+    # Enable analytics
+    analyticsEnabled: true
+
+# Image configuration
+image:
+  repository: twingate/connector
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+# Replica configuration
+replicaCount: 2
+
+# Resource limits
+resources:
+  requests:
+    memory: "128Mi"
+    cpu: "100m"
+  limits:
+    memory: "256Mi"
+    cpu: "500m"
+
+# Service account
+serviceAccount:
+  create: true
+  name: "twingate-connector"
+  annotations: {}
+
+# Pod annotations
+podAnnotations: {}
+
+# Pod security context
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  fsGroup: 1000
+
+# Container security context
+securityContext:
+  capabilities:
+    drop:
+    - ALL
+    add:
+    - NET_ADMIN
+  readOnlyRootFilesystem: true
+  allowPrivilegeEscalation: false
+
+# Node selector
+nodeSelector: {}
+
+# Tolerations
+tolerations: []
+
+# Affinity rules
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+    - weight: 100
+      podAffinityTerm:
+        labelSelector:
+          matchLabels:
+            app.kubernetes.io/name: twingate-connector
+        topologyKey: kubernetes.io/hostname
+
+# Health check probes
+livenessProbe:
+  httpGet:
+    path: /health
+    port: 9999
+  initialDelaySeconds: 30
+  periodSeconds: 30
+
+readinessProbe:
+  httpGet:
+    path: /health
+    port: 9999
+  initialDelaySeconds: 10
+  periodSeconds: 10
+
+# Network policy
+networkPolicy:
+  enabled: true
+  # Allow egress to Twingate cloud
+  egressRules:
+    - to:
+      - namespaceSelector: {}
+      ports:
+      - protocol: TCP
+        port: 443
+      - protocol: UDP
+        port: 443
+
+# Prometheus metrics
+metrics:
+  enabled: false
+  interval: 30s
