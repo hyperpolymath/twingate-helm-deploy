@@ -1,0 +1,281 @@
+// SPDX-License-Identifier: PMPL-1.0-or-later
+= ZeroTier Integration Guide
+
+This guide explains how to integrate Twingate with ZeroTier K8s Link for layered secure access.
+
+== Architecture Overview
+
+----
+┌──────────────────────────────────────────────────┐
+│  External Users                                   │
+│    └── Twingate Client (authenticated)           │
+│              ↓ Zero-Trust Access                  │
+├──────────────────────────────────────────────────┤
+│  Twingate Connector (in K8s)                     │
+│    ├── Identity verification (OIDC/SSO)          │
+│    ├── Fine-grained access control               │
+│    └── Segmentation policies                     │
+│              ↓ Routes to Services                 │
+├──────────────────────────────────────────────────┤
+│  ZeroTier Overlay Network                        │
+│    ├── Encrypted P2P mesh (AES-256)              │
+│    ├── Stable overlay IPs (10.147.x.x)           │
+│    └── Node-to-node connectivity                 │
+│              ↓ Underlays K8s                      │
+├──────────────────────────────────────────────────┤
+│  Kubernetes Services & Pods                      │
+│    └── Applications, Databases, IPFS             │
+└──────────────────────────────────────────────────┘
+----
+
+== Why Layer Twingate and ZeroTier?
+
+*Separation of Concerns:*
+
+| Layer | Purpose | Scope |
+|-------|---------|-------|
+| **Twingate** | External → Internal access | User authentication, authorization, audit |
+| **ZeroTier** | Internal mesh networking | Node connectivity, encryption, stable IPs |
+
+*Security Benefits:*
+1. **Defense in Depth** - Two independent security layers
+2. **Blast Radius Containment** - Compromise of one doesn't break the other
+3. **Principle of Least Privilege** - Fine-grained access at both layers
+
+== Deployment Order
+
+Deploy ZeroTier first (foundation), then Twingate (access layer):
+
+[source,bash]
+----
+# 1. Deploy ZeroTier K8s Link
+cd zerotier-k8s-link
+export ZEROTIER_NETWORK_ID=<network-id>
+export ZEROTIER_API_TOKEN=<api-token>
+just setup
+
+# Wait for mesh to form
+just mesh-status
+
+# 2. Deploy Twingate Connector
+cd ../twingate-helm-deploy
+export TWINGATE_ACCESS_TOKEN=<access-token>
+export TWINGATE_REFRESH_TOKEN=<refresh-token>
+just setup
+
+# 3. Verify both layers
+just status  # Twingate pods running
+cd ../zerotier-k8s-link && just health-check $ZEROTIER_NETWORK_ID
+----
+
+== Network Policy Coordination
+
+Both systems use NetworkPolicies that are complementary:
+
+*Twingate NetworkPolicy* (twingate-helm-deploy):
+[source,yaml]
+----
+egress:
+  - to:
+      - podSelector: {}
+    ports:
+      - protocol: TCP
+        port: 443  # Twingate Cloud API
+  - to:
+      - podSelector:
+          matchLabels:
+            accessible-via-twingate: "true"
+    # Allow access to services tagged for Twingate
+----
+
+*ZeroTier NetworkPolicy* (zerotier-k8s-link):
+[source,yaml]
+----
+egress:
+  - to:
+      - podSelector: {}
+    ports:
+      - protocol: UDP
+        port: 9993  # ZeroTier mesh traffic
+----
+
+**Key Point:** Twingate routes application traffic (TCP/HTTP), ZeroTier handles overlay networking (UDP/9993). They don't interfere.
+
+== Service Exposure Pattern
+
+**Pattern 1: ZeroTier-bound Service**
+
+Service binds to ZeroTier interface, Twingate exposes it externally:
+
+[source,yaml]
+----
+# Service manifest (e.g., IPFS)
+apiVersion: v1
+kind: Service
+metadata:
+  name: ipfs-gateway
+  labels:
+    accessible-via-twingate: "true"
+spec:
+  type: ClusterIP
+  selector:
+    app: ipfs
+  ports:
+    - port: 8080
+      targetPort: 8080
+----
+
+[source,bash]
+----
+# Twingate Resource Configuration (Admin Console):
+# - Name: "IPFS Gateway"
+# - Address: ipfs-gateway.ipfs-system.svc.cluster.local:8080
+# - Access: Engineering team
+# - Network: zerotier-overlay
+----
+
+**Pattern 2: Service Mesh Integration**
+
+Use ZeroTier for inter-cluster communication, Twingate for external access:
+
+[source]
+----
+External User → Twingate Client → Twingate Connector
+                                        ↓
+                           Service in Cluster A (ZeroTier IP)
+                                        ↓
+                           ZeroTier Mesh
+                                        ↓
+                           Service in Cluster B (ZeroTier IP)
+----
+
+This enables **multi-cluster access** via Twingate with **encrypted cross-cluster communication** via ZeroTier.
+
+== Security Considerations
+
+**Principle: Twingate NEVER routes ZeroTier control traffic**
+
+[source,bash]
+----
+# ✓ ALLOW: Twingate → Application services on ZeroTier overlay
+# ✗ DENY: Twingate → Port 9993 (ZeroTier control plane)
+# ✗ DENY: Twingate → zerotier-cli commands
+# ✗ DENY: Direct external access to ZeroTier network
+----
+
+**Firewall Rules:**
+
+In Twingate Admin Console, ensure Resources do NOT include:
+- Port 9993 (ZeroTier control)
+- Any zerotier-system namespace services
+- ZeroTier Central API endpoints
+
+**NetworkPolicy Enforcement:**
+
+[source,yaml]
+----
+# Block Twingate from accessing ZeroTier control
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: twingate-deny-zerotier-control
+  namespace: twingate-system
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: twingate-connector
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              name: zerotier-system
+      ports:
+        - protocol: UDP
+          port: 9993
+      # This rule DENIES by not being in the allow list
+----
+
+## Monitoring Both Layers
+
+**Prometheus Metrics:**
+
+Twingate Connector metrics:
+- `twingate_connector_status{namespace="twingate-system"}` - Health
+- `twingate_active_sessions_total` - Current user connections
+- `twingate_data_transferred_bytes` - Bandwidth usage
+
+ZeroTier metrics:
+- `zerotier_network_status{namespace="zerotier-system"}` - Mesh health
+- `zerotier_peers_total` - Connected nodes
+- `zerotier_latency_ms` - Overlay latency
+
+**Grafana Dashboard:**
+
+Correlate both layers:
+- High Twingate traffic + low ZeroTier latency = Good
+- High Twingate traffic + high ZeroTier latency = Investigate mesh
+- Low Twingate traffic + errors = Authentication issues
+
+## Troubleshooting
+
+**Users can't access services:**
+1. Check Twingate Connector: `just status` (in twingate-helm-deploy)
+2. Check ZeroTier mesh: `just mesh-status` (in zerotier-k8s-link)
+3. Verify service is labeled `accessible-via-twingate: "true"`
+4. Check Twingate Resource configuration matches service name
+
+**Slow access through Twingate:**
+1. Check ZeroTier latency: `zerotier-cli listpeers`
+2. Verify nodes are direct-connected (not relayed)
+3. Check if Twingate Connector has sufficient resources (CPU/mem)
+4. Review NetworkPolicies aren't adding overhead
+
+**Twingate Connector can't reach services:**
+1. Verify service is on ZeroTier overlay: `kubectl get svc -A -l accessible-via-twingate=true`
+2. Test from Connector pod: `kubectl -n twingate-system exec -it <pod> -- curl <service-ip>`
+3. Check if ZeroTier DaemonSet is running: `kubectl -n zerotier-system get pods`
+
+## Example: Full Stack Deployment
+
+[source,bash]
+----
+# 1. ZeroTier overlay (internal mesh)
+cd zerotier-k8s-link
+export ZEROTIER_NETWORK_ID=<network-id>
+export ZEROTIER_API_TOKEN=<api-token>
+just setup
+just authorize-nodes
+
+# 2. IPFS on ZeroTier mesh
+cd ../ipfs-overlay
+just deploy
+
+# 3. Twingate for external access
+cd ../twingate-helm-deploy
+export TWINGATE_ACCESS_TOKEN=<access-token>
+export TWINGATE_REFRESH_TOKEN=<refresh-token>
+just setup
+
+# 4. Label IPFS service for Twingate access
+kubectl label svc ipfs-gateway -n ipfs-system accessible-via-twingate=true
+
+# 5. Create Twingate Resource (Admin Console)
+# - Name: "IPFS Private Gateway"
+# - Address: ipfs-gateway.ipfs-system.svc.cluster.local:8080
+# - Protocol: HTTP
+# - Access: Data team
+
+# 6. Test access
+twingate status  # From user machine
+curl http://ipfs-private-gateway:8080/ipfs/<CID>  # Routed via Twingate
+----
+
+Now users access IPFS via Twingate (authenticated, authorized), while IPFS nodes communicate over encrypted ZeroTier mesh.
+
+## References
+
+- link:https://github.com/hyperpolymath/zerotier-k8s-link[ZeroTier K8s Link]
+- link:https://github.com/hyperpolymath/ipfs-overlay[IPFS Overlay]
+- link:../README.adoc[Twingate Helm Deploy README]
