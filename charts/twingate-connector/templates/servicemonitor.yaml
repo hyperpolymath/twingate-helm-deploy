@@ -1,0 +1,37 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
+{{- if .Values.metrics.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "twingate-connector.fullname" . }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "twingate-connector.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "twingate-connector.selectorLabels" . | nindent 6 }}
+  endpoints:
+    - port: metrics
+      interval: {{ .Values.metrics.interval | default "30s" }}
+      path: /metrics
+      scheme: http
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "twingate-connector.fullname" . }}-metrics
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "twingate-connector.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  clusterIP: None
+  selector:
+    {{- include "twingate-connector.selectorLabels" . | nindent 4 }}
+  ports:
+    - name: metrics
+      port: 9090
+      targetPort: 9090
+      protocol: TCP
+{{- end }}

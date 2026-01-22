@@ -108,8 +108,7 @@ networkPolicy:
       - protocol: UDP
         port: 443
 
-# Monitoring
-monitoring:
-  enabled: true
-  port: 9999
-  path: /metrics
+# Prometheus metrics
+metrics:
+  enabled: false
+  interval: 30s
