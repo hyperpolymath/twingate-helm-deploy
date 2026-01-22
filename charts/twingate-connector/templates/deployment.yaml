@@ -1,0 +1,57 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "twingate-connector.fullname" . }}
+  labels:
+    {{- include "twingate-connector.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "twingate-connector.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "twingate-connector.selectorLabels" . | nindent 8 }}
+    spec:
+      serviceAccountName: {{ include "twingate-connector.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+      - name: connector
+        securityContext:
+          {{- toYaml .Values.securityContext | nindent 12 }}
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        env:
+        - name: TWINGATE_NETWORK
+          value: {{ .Values.twingate.network | quote }}
+        - name: TWINGATE_ACCESS_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.twingate.credentials.secretName }}
+              key: {{ .Values.twingate.credentials.accessTokenKey }}
+        - name: TWINGATE_REFRESH_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.twingate.credentials.secretName }}
+              key: {{ .Values.twingate.credentials.refreshTokenKey }}
+        - name: TWINGATE_LOG_LEVEL
+          value: {{ .Values.twingate.connector.logLevel }}
+        - name: TWINGATE_LOG_ANALYTICS
+          value: {{ .Values.twingate.connector.analyticsEnabled | quote }}
+        ports:
+        - name: metrics
+          containerPort: 9999
+          protocol: TCP
+        livenessProbe:
+          {{- toYaml .Values.livenessProbe | nindent 12 }}
+        readinessProbe:
+          {{- toYaml .Values.readinessProbe | nindent 12 }}
+        resources:
+          {{- toYaml .Values.resources | nindent 12 }}

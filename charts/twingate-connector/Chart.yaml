@@ -1,0 +1,18 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
+apiVersion: v2
+name: twingate-connector
+description: Helm chart for Twingate Connector deployment
+type: application
+version: 0.1.0
+appVersion: "latest"
+keywords:
+  - twingate
+  - zero-trust
+  - network-access
+  - flatracoon
+home: https://github.com/hyperpolymath/twingate-helm-deploy
+sources:
+  - https://github.com/hyperpolymath/flatracoon-netstack
+maintainers:
+  - name: Hyperpolymath
+    email: hyperpolymath@proton.me
