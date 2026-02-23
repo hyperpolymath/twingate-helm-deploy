@@ -1,20 +1,8 @@
-;; SPDX-License-Identifier: AGPL-3.0-or-later
-;; ECOSYSTEM.scm - Ecosystem position for twingate-helm-deploy
-;; Media-Type: application/vnd.ecosystem+scm
-
-(ecosystem
-  (version "1.0")
-  (name "twingate-helm-deploy")
-  (type "")
-  (purpose "")
-
-  (position-in-ecosystem
-    (category "")
-    (subcategory "")
-    (unique-value ()))
-
-  (related-projects ())
-
-  (what-this-is ())
-
-  (what-this-is-not ()))
+;; SPDX-License-Identifier: PMPL-1.0-or-later
+(ecosystem (metadata (version "0.2.0") (last-updated "2026-02-08"))
+  (project (name "twingate-helm-deploy") (purpose "Twingate zero-trust connector Helm deployment") (role access-gateway))
+  (flatracoon-integration
+    (parent "flatracoon/netstack")
+    (layer access)
+    (depended-on-by ())
+    (depends-on ())))
