@@ -1,0 +1,26 @@
+# SPDX-License-Identifier: PMPL-1.0-or-later
+# Clade declaration — part of the gv-clade-index registry
+# See: https://github.com/hyperpolymath/gv-clade-index
+
+[identity]
+uuid = "de81579c-9116-5484-b48b-b6e32f30aba8"
+primary-forge = "github"
+primary-owner = "hyperpolymath"
+canonical-name = "twingate-helm-deploy"
+prefixed-name = "ix-twingate-helm-deploy"
+
+[clade]
+primary = "ix"
+secondary = []
+assigned = "2026-03-16"
+rationale = ""
+
+[forges]
+github = "hyperpolymath/twingate-helm-deploy"
+gitlab = "hyperpolymath/twingate-helm-deploy"
+bitbucket = "hyperpolymath/twingate-helm-deploy"
+
+[lineage]
+type = "standalone"
+parent = "Twingate deployment via Helm"
+born = "2026-03-16"
