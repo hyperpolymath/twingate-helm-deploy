@@ -6,10 +6,15 @@ default:
 
 # Deploy Twingate connector with specified environment
 deploy ENV="production":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    values_file="$$(mktemp)"
+    trap 'rm -f "$$values_file"' EXIT
+    nickel export --format yaml "configs/{{ENV}}.ncl" > "$$values_file"
     helm upgrade --install twingate-connector ./charts/twingate-connector \
         --namespace twingate-system --create-namespace \
-        --values configs/{{ENV}}.ncl
-    @echo "✓ Deployment complete"
+        --values "$$values_file"
+    echo "✓ Deployment complete"
 
 # Remove Twingate deployment
 undeploy:
@@ -46,6 +51,11 @@ health-check:
 # Validate Helm chart
 validate:
     helm lint charts/twingate-connector
+    nickel typecheck configs/schema.ncl
+    nickel typecheck configs/base.ncl
+    nickel typecheck configs/staging.ncl
+    nickel typecheck configs/production.ncl
+    nickel export --format yaml configs/production.ncl > /dev/null
     @echo "✓ Chart validation passed"
 
 # Clean up resources

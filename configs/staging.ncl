@@ -3,12 +3,12 @@ let base = import "./base.ncl" in
 {
   network = base.network,
   connector = {
-    logLevel = "warn",
+    logLevel = "info",
     analyticsEnabled = base.connector.analyticsEnabled,
   },
   kubernetes = {
     namespace = base.kubernetes.namespace,
-    replicaCount = 3,
+    replicaCount = 1,
   },
   resources = base.resources,
 }
