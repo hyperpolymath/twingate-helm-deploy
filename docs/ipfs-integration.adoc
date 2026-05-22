@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: PMPL-1.0-or-later
+// SPDX-License-Identifier: MPL-2.0
 = IPFS Integration Guide
 
 This guide explains how to expose IPFS services via Twingate for secure external access.

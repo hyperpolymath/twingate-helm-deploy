@@ -1,4 +1,4 @@
-# SPDX-License-Identifier: PMPL-1.0-or-later
+# SPDX-License-Identifier: MPL-2.0
 # twingate-helm-deploy module manifest for FlatRacoon orchestrator
 #
 # This Nickel configuration file defines the metadata and integration points for the
