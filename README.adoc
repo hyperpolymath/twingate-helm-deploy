@@ -1,12 +1,15 @@
-image:https://img.shields.io/badge/License-PMPL--1.0-blue.svg[License: PMPL-1.0,link="https://github.com/hyperpolymath/palimpsest-license"]
+// SPDX-License-Identifier: MPL-2.0
+// Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+image:https://img.shields.io/badge/License-MPL_2.0-blue.svg[License: MPL-2.0,link="https://opensource.org/licenses/MPL-2.0"]
 image:https://img.shields.io/badge/Philosophy-Palimpsest-indigo.svg[Palimpsest,link="https://github.com/hyperpolymath/palimpsest-license"]
 image:https://img.shields.io/badge/Idris-Inside-green.svg[Idris Inside,link="https://www.idris-lang.org"]
 image:https://img.shields.io/badge/Proven-ZKP-purple.svg[Proven ZKP,link="https://github.com/hyperpolymath/proven"]
 
 
-// SPDX-License-Identifier: MPL-2.0
 // SPDX-FileCopyrightText: 2025 Hyperpolymath <hyperpolymath@proton.me>
 = twingate-helm-deploy
+image:https://img.shields.io/badge/OpenSSF-Best_Practices-green?logo=openssourcesecurity[OpenSSF Best Practices,link="https://www.bestpractices.dev/en/projects/new?repo_url=https://github.com/hyperpolymath/twingate-helm-deploy"]
+
 
 :icons: font
 :toc: left
@@ -165,7 +168,9 @@ Next:: Helm chart alternatives, automated failover testing
 
 == License
 
-MPL-2.0
+This project is licensed under the Mozilla Public License, v. 2.0. See the `LICENSE` file for details.
+
+SPDX-License-Identifier: MPL-2.0
 
 
 == Architecture
