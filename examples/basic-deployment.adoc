@@ -1,0 +1,55 @@
+== Twingate Connector Deployment Guide
+
+Deploy Twingate Connector to Kubernetes for zero-trust network access.
+
+=== Prerequisites
+
+* Kubernetes cluster
+* Helm 3+
+* Twingate account with network created
+* Access/refresh tokens from Twingate
+
+=== Quick Start
+
+[arabic]
+. Get credentials from Twingate Admin Console
+. Set environment variables:
+
+[source,bash]
+----
+export TWINGATE_ACCESS_TOKEN="your-access-token"
+export TWINGATE_REFRESH_TOKEN="your-refresh-token"
+----
+
+[arabic, start=3]
+. Configure secrets:
+
+[source,bash]
+----
+just configure-secrets
+----
+
+[arabic, start=4]
+. Deploy:
+
+[source,bash]
+----
+just deploy production
+----
+
+[arabic, start=5]
+. Verify:
+
+[source,bash]
+----
+just status
+just health-check
+----
+
+=== Integration with ZeroTier
+
+Route Twingate traffic through ZeroTier overlay: - Deploy
+zerotier-k8s-link first - Twingate connector automatically uses ZeroTier
+mesh
+
+See: https://github.com/hyperpolymath/zerotier-k8s-link
